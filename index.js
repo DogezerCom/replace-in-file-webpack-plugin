@@ -19,13 +19,13 @@ function getAllFiles(root) {
 	return res
 }
 
-function replace(file, rules) {
+function replace(file, rules, chunkFileName) {
 	const src = path.resolve(file);
 	let template = fs.readFileSync(src, 'utf8');
 
 	template = rules.reduce(
 		(template, rule) => template.replace(
-			rule.search, (typeof rule.replace === 'string' ? rule.replace : rule.replace.bind(global))
+			rule.search, (typeof rule.replace === 'string' ? rule.replace : rule.replace.bind(global,chunkFileName))
 		),
 		template
 	);
@@ -43,13 +43,14 @@ ReplaceInFilePlugin.prototype.apply = function (compiler) {
 		if (statsData.hasErrors()) {
 			return
 		}
+		const chunkFilename = statsData.compilation.chunks[0].files[0];  
 		this.options.forEach(option => {
 			const dir = option.dir ? option.dir : root;
 			const files = option.files;
 
 			if (files && Array.isArray(files) && files.length) {
 				files.forEach(file => {
-					replace(path.resolve(dir, file), option.rules);
+					replace(path.resolve(dir, file), option.rules, chunkFilename);
 				})
 			} else {
 				const test = option.test;
@@ -64,8 +65,7 @@ ReplaceInFilePlugin.prototype.apply = function (compiler) {
 					if (!match) {
 						return;
 					}
-
-					replace(file, option.rules);
+					replace(file, option.rules, chunkFilename);
 
 				})
 			}
